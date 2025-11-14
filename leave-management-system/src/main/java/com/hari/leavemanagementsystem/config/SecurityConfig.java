@@ -49,6 +49,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/leave-requests/**").hasAnyRole("ADMIN", "EMPLOYEE")
 
                 // any other endpoint: authenticated
+                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/holidays/**").hasAnyRole("ADMIN","EMPLOYEE")
+                .requestMatchers("/api/holidays/**").hasRole("ADMIN")
+                .requestMatchers("/api/manager-responses/**").hasAnyRole("ADMIN","EMPLOYEE")
+                .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN","EMPLOYEE")
+                .requestMatchers("/api/leave-balance/**").hasAnyRole("ADMIN","EMPLOYEE")
                 .anyRequest().authenticated()
             )
 

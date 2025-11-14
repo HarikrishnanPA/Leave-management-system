@@ -19,6 +19,8 @@ import com.hari.leavemanagementsystem.model.LeaveRequest;
 import com.hari.leavemanagementsystem.security.CustomUserDetails;
 import com.hari.leavemanagementsystem.service.LeaveRequestService;
 
+import lombok.Data;
+
 @RestController
 @RequestMapping("/api/leave-requests")
 public class LeaveRequestController {
@@ -49,12 +51,26 @@ public class LeaveRequestController {
         return leaveRequestService.getLeaveRequestsByEmployeeId(employeeId);
     }
 
+    /**
+     * Employee creates a leave request.
+     * Accepts a small DTO so that client provides leaveTypeId rather than a nested LeaveType object.
+     */
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
-    public ResponseEntity<LeaveRequest> createLeaveRequest(@RequestBody LeaveRequest leaveRequest, Authentication authentication) {
+    public ResponseEntity<LeaveRequest> createLeaveRequest(@RequestBody CreateLeaveRequestDto dto, Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        // attach employee from token
+
+        // build LeaveRequest entity from DTO
+        LeaveRequest leaveRequest = new LeaveRequest();
+        leaveRequest.setStartDate(dto.getStartDate());
+        leaveRequest.setEndDate(dto.getEndDate());
+        leaveRequest.setReason(dto.getReason());
+        // status will be set in service.saveLeaveRequest if null
+
+        // attach employee and leave type using service helpers
         leaveRequestService.attachEmployeeToRequest(leaveRequest, userDetails.getId());
+        leaveRequestService.attachLeaveTypeToRequest(leaveRequest, dto.getLeaveTypeId());
+
         LeaveRequest saved = leaveRequestService.saveLeaveRequest(leaveRequest);
         return ResponseEntity.status(201).body(saved);
     }
@@ -64,5 +80,14 @@ public class LeaveRequestController {
     public ResponseEntity<?> deleteLeaveRequest(@PathVariable Long id) {
         leaveRequestService.deleteLeaveRequest(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Small public DTO class for create request
+    @Data
+    public static class CreateLeaveRequestDto {
+        private Long leaveTypeId;
+        private java.time.LocalDate startDate;
+        private java.time.LocalDate endDate;
+        private String reason;
     }
 }
