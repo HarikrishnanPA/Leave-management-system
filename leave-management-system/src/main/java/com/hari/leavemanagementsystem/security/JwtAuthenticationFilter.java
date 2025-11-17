@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hari.leavemanagementsystem.payload.ApiResponse;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    // ✅ Paths the filter should completely skip
+    // Paths the filter should skip
     private static final List<String> SKIP_URLS = List.of(
             "/v3/api-docs",
             "/swagger-ui",
@@ -48,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ✅ Skip JWT checks for Swagger, API docs, Auth, and static resources
+        // Skip URLs that don’t require token
         if (shouldSkip(path) || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
@@ -77,9 +80,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (Exception e) {
-            // ✅ Use plain logger for Java Util Logging
-            System.err.println("JWT validation failed: " + e.getMessage());
+        }
+        catch (Exception ex) {
+
+            // --- FIXED: Send proper JSON error response ---
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+
+            ApiResponse apiResponse = new ApiResponse(
+                    "error",
+                    "Invalid or expired token",
+                    null
+            );
+
+            ObjectMapper mapper = new ObjectMapper();
+            response.getWriter().write(mapper.writeValueAsString(apiResponse));
+            return; // stop filter chain here
         }
 
         filterChain.doFilter(request, response);

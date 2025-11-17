@@ -85,4 +85,9 @@ public class Employee {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = true;
+
 }

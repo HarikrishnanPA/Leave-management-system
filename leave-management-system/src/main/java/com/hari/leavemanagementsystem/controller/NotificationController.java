@@ -2,6 +2,7 @@ package com.hari.leavemanagementsystem.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hari.leavemanagementsystem.model.Employee;
 import com.hari.leavemanagementsystem.model.Notification;
+import com.hari.leavemanagementsystem.payload.ApiResponse;
 import com.hari.leavemanagementsystem.repository.EmployeeRepository;
 import com.hari.leavemanagementsystem.service.NotificationService;
 
@@ -26,26 +28,45 @@ public class NotificationController {
     private final NotificationService notificationService;
     private final EmployeeRepository employeeRepository;
 
-    // Admin can fetch all notifications (optional)
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/all")
-    public ResponseEntity<List<Notification>> getAll() {
-        // implement if needed: return all notifications
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    // Employee fetch own notifications
+    // --------------------------------------------------------
+    // EMPLOYEE or ADMIN → Get own notifications
+    // --------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     @GetMapping("/my")
-    public ResponseEntity<List<Notification>> myNotifications(Principal principal) {
+    public ResponseEntity<?> myNotifications(Principal principal) {
+
         Employee e = employeeRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return ResponseEntity.ok(notificationService.getNotificationsForUser(e));
+
+        List<Notification> notifications = notificationService.getNotificationsForUser(e);
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "User notifications retrieved successfully",
+                Map.of("notifications", notifications)
+        );
+
+        return ResponseEntity.ok(response);
     }
 
+    // --------------------------------------------------------
+    // Mark notification as read
+    // --------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     @PutMapping("/{id}/mark-read")
-    public ResponseEntity<Notification> markRead(@PathVariable Long id) {
-        return ResponseEntity.ok(notificationService.markAsRead(id));
+    public ResponseEntity<?> markRead(@PathVariable Long id) {
+
+        Notification updated = notificationService.markAsRead(id);
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "Notification marked as read successfully",
+                Map.of(
+                        "notificationId", id,
+                        "notification", updated
+                )
+        );
+
+        return ResponseEntity.ok(response);
     }
 }

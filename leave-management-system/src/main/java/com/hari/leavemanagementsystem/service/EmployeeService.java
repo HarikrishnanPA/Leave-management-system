@@ -19,27 +19,53 @@ public class EmployeeService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // 🔥 Return only active employees
     public List<Employee> getAllEmployees() {
-        return employeeRepository.findAll();
+        return employeeRepository.findByActiveTrue();
     }
 
+    // 🔥 Return only if active
     public Employee getEmployeeById(Long id) {
-        return employeeRepository.findById(id).orElse(null);
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        if (!employee.isActive()) {
+            throw new RuntimeException("Employee is deactivated");
+        }
+
+        return employee;
     }
 
+    // 🔥 Used in login flow — block inactive users
     public Optional<Employee> getEmployeeByEmail(String email) {
-        return employeeRepository.findByEmail(email);
+        Optional<Employee> emp = employeeRepository.findByEmail(email);
+
+        if (emp.isPresent() && !emp.get().isActive()) {
+            throw new RuntimeException("User account is deactivated");
+        }
+
+        return emp;
     }
 
     public Employee saveEmployee(Employee employee) {
-        // ✅ Encode the password before saving
         if (employee.getPassword() != null && !employee.getPassword().isBlank()) {
             employee.setPassword(passwordEncoder.encode(employee.getPassword()));
         }
+        employee.setActive(true); // ensure new employee defaults to active
         return employeeRepository.save(employee);
     }
 
+    // 🔥 Soft delete — do NOT remove from DB
     public void deleteEmployee(Long id) {
-        employeeRepository.deleteById(id);
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        employee.setActive(false); // safe delete
+        employeeRepository.save(employee);
     }
+
+    public List<Employee> getEmployeesByDepartment(String department) {
+        return employeeRepository.findByDepartmentAndActiveTrue(department);
+    }
+
 }

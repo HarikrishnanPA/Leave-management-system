@@ -19,8 +19,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Employee employee = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-
+        
         // ✅ Must return CustomUserDetails, not Spring's default User
         return new CustomUserDetails(employee);
     }
+    
 }

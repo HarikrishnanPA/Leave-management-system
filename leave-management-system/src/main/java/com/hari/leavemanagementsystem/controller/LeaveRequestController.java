@@ -1,6 +1,7 @@
 package com.hari.leavemanagementsystem.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hari.leavemanagementsystem.model.LeaveRequest;
+import com.hari.leavemanagementsystem.payload.ApiResponse;
 import com.hari.leavemanagementsystem.security.CustomUserDetails;
 import com.hari.leavemanagementsystem.service.LeaveRequestService;
 
@@ -28,61 +30,109 @@ public class LeaveRequestController {
     @Autowired
     private LeaveRequestService leaveRequestService;
 
+    // --------------------------------------------------------
+    // ADMIN → Get ALL leave requests
+    // --------------------------------------------------------
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public List<LeaveRequest> getAllLeaveRequests() {
-        return leaveRequestService.getAllLeaveRequests();
+    public ResponseEntity<?> getAllLeaveRequests() {
+
+        List<LeaveRequest> requests = leaveRequestService.getAllLeaveRequests();
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "All leave requests retrieved successfully",
+                Map.of("leaveRequests", requests)
+        );
+
+        return ResponseEntity.ok(response);
     }
 
+    // --------------------------------------------------------
+    // EMPLOYEE or ADMIN → Get leave requests of specific employee
+    // --------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     @GetMapping("/employee/{employeeId}")
-    public List<LeaveRequest> getLeaveRequestsByEmployee(
+    public ResponseEntity<?> getLeaveRequestsByEmployee(
             @PathVariable Long employeeId,
             Authentication authentication
     ) {
+
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         boolean isEmployee = userDetails.getAuthorities()
                 .stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE"));
 
+        // EMPLOYEE can only view their own requests
         if (isEmployee && !userDetails.getId().equals(employeeId)) {
             throw new AccessDeniedException("You can only view your own leave requests");
         }
-        return leaveRequestService.getLeaveRequestsByEmployeeId(employeeId);
+
+        List<LeaveRequest> requests = leaveRequestService.getLeaveRequestsByEmployeeId(employeeId);
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "Leave requests retrieved successfully",
+                Map.of("leaveRequests", requests)
+        );
+
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * Employee creates a leave request.
-     * Accepts a small DTO so that client provides leaveTypeId rather than a nested LeaveType object.
-     */
+    // --------------------------------------------------------
+    // EMPLOYEE → Create a leave request
+    // --------------------------------------------------------
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
-    public ResponseEntity<LeaveRequest> createLeaveRequest(@RequestBody CreateLeaveRequestDto dto, Authentication authentication) {
+    public ResponseEntity<?> createLeaveRequest(
+            @RequestBody CreateLeaveRequestDto dto,
+            Authentication authentication
+    ) {
+
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // build LeaveRequest entity from DTO
+        // Build LeaveRequest entity from DTO
         LeaveRequest leaveRequest = new LeaveRequest();
         leaveRequest.setStartDate(dto.getStartDate());
         leaveRequest.setEndDate(dto.getEndDate());
         leaveRequest.setReason(dto.getReason());
-        // status will be set in service.saveLeaveRequest if null
 
-        // attach employee and leave type using service helpers
+        // Attach employee + leave type
         leaveRequestService.attachEmployeeToRequest(leaveRequest, userDetails.getId());
         leaveRequestService.attachLeaveTypeToRequest(leaveRequest, dto.getLeaveTypeId());
 
         LeaveRequest saved = leaveRequestService.saveLeaveRequest(leaveRequest);
-        return ResponseEntity.status(201).body(saved);
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "Leave request created successfully",
+                Map.of("leaveRequest", saved)
+        );
+
+        return ResponseEntity.status(201).body(response);
     }
 
+    // --------------------------------------------------------
+    // ADMIN → Delete a leave request
+    // --------------------------------------------------------
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteLeaveRequest(@PathVariable Long id) {
+
         leaveRequestService.deleteLeaveRequest(id);
-        return ResponseEntity.noContent().build();
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "Leave request deleted successfully",
+                Map.of("requestId", id)
+        );
+
+        return ResponseEntity.ok(response);
     }
 
-    // Small public DTO class for create request
+    // --------------------------------------------------------
+    // DTO used for creating leave requests
+    // --------------------------------------------------------
     @Data
     public static class CreateLeaveRequestDto {
         private Long leaveTypeId;
