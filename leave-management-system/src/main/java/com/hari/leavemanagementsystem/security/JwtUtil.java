@@ -65,7 +65,7 @@ public class JwtUtil {
         try {
             return Jwts.parserBuilder().setSigningKey(key).build()
                     .parseClaimsJws(token).getBody().getSubject();
-        } catch (Exception ex) {
+        } catch (JwtException | IllegalArgumentException ex) {
             return null;
         }
     }
