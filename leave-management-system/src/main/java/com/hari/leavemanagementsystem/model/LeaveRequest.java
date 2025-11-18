@@ -1,6 +1,7 @@
 package com.hari.leavemanagementsystem.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -52,4 +53,10 @@ public class LeaveRequest {
     @JoinColumn(name = "leave_type_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private LeaveType leaveType;
+
+    public List<LocalDate> getDatesBetween() {
+        return startDate.datesUntil(endDate.plusDays(1))
+                        .toList();
+    }
+
 }

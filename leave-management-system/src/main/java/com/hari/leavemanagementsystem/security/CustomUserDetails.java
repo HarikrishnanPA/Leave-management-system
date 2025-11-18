@@ -56,4 +56,8 @@ public class CustomUserDetails implements UserDetails {
     public Long getId() {
         return employee.getId();
     }
+
+    public String getRole() {
+        return employee.getRole();
+    }
 }
