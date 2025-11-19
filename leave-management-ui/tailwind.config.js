@@ -1,0 +1,26 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: "#3b82f6",
+        "background-light": "#f8fafc",
+        "background-dark": "#0f172a",
+      },
+      fontFamily: {
+        display: ["Poppins", "sans-serif"],
+      },
+      borderRadius: {
+        DEFAULT: "0.75rem",
+      },
+      backgroundImage: {
+        'login-bg': "url('/src/assets/login-bg.svg')",
+      },
+    },
+  },
+  plugins: [],
+}
