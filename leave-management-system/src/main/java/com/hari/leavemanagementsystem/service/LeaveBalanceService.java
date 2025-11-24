@@ -43,6 +43,32 @@ public class LeaveBalanceService {
     }
 
     @Transactional
+    public void initializeAllEmployeeLeaveBalances() {
+        List<Employee> employees = employeeRepository.findAll();
+        List<LeaveType> types = leaveTypeRepository.findAll();
+
+        for (Employee employee : employees) {
+            for (LeaveType type : types) {
+
+                boolean exists = leaveBalanceRepository
+                        .findByEmployeeAndLeaveType(employee, type)
+                        .isPresent();
+
+                if (!exists) {
+                    LeaveBalance balance = LeaveBalance.builder()
+                            .employee(employee)
+                            .leaveType(type)
+                            .availableDays(type.getMaxDays())
+                            .usedDays(0)
+                            .build();
+
+                    leaveBalanceRepository.save(balance);
+                }
+            }
+        }
+    }
+
+    @Transactional
     public void deductBalance(Employee employee, LeaveType leaveType, int days) {
         LeaveBalance balance = leaveBalanceRepository.findByEmployeeAndLeaveType(employee, leaveType)
                 .orElseThrow(() -> new IllegalArgumentException("No leave balance for this type"));
@@ -85,7 +111,7 @@ public class LeaveBalanceService {
                 leaveBalanceRepository.save(balance);
             }
         }
-}
 
+    }
 
 }

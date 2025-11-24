@@ -50,7 +50,6 @@ export default function ViewEmployees() {
     setSearch(value);
     setCurrentPage(1);
 
-
     let updated = employees;
 
     if (selectedDept !== "") {
@@ -71,7 +70,6 @@ export default function ViewEmployees() {
     setSelectedDept(dept);
     setCurrentPage(1);
 
-
     if (dept === "") {
       setFilteredEmployees(
         employees.filter((emp) =>
@@ -84,7 +82,7 @@ export default function ViewEmployees() {
     try {
       const deptEmployees = await fetchEmployeesByDepartment(dept);
       setFilteredEmployees(
-        deptEmployees.filter((emp) =>
+        deptEmployees.filter((emp: any) =>
           emp.name.toLowerCase().includes(search.toLowerCase())
         )
       );
@@ -109,7 +107,7 @@ export default function ViewEmployees() {
 
         {/* Department dropdown */}
         <select
-          className="border border-gray-300 rounded-md p-2 bg-white"
+          className="border border-gray-300 rounded-md p-2 bg-white "
           value={selectedDept}
           onChange={(e) => handleDeptFilter(e.target.value)}
         >

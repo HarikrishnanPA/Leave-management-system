@@ -1,33 +1,43 @@
-import { Mail, Phone, Briefcase, Building } from "lucide-react";
+import React from "react";
 
-export default function EmployeeInfoCard() {
+interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  designation: string;
+  department: string;
+  role: string;
+}
+
+export default function EmployeeInfoCard({ employee }: { employee: Employee }) {
   return (
-    <div className="border border-blue-300 rounded-xl p-6 max-w-xs bg-white shadow-sm">
-      {/* Placeholder Image */}
-      <div className="w-20 h-20 bg-gray-200 rounded-md mx-auto mb-4"></div>
+    <div className="border border-blue-300 rounded-2xl p-6 bg-white shadow-sm">
+      <h2 className="text-xl font-semibold mb-4">Employee Details</h2>
 
-      <div className="space-y-3 text-sm">
-
-        <div className="flex items-center gap-3">
-          <Phone size={18} />
-          <span>+91 84723 28837</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Mail size={18} />
-          <span>robert.ph@noemail.com</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Briefcase size={18} />
-          <span>Software Engineer</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Building size={18} />
-          <span>Engineering</span>
-        </div>
-
+      <div className="space-y-2 text-xl">
+        <p>
+          <span className="font-semibold">Name:</span> {employee.name}
+        </p>
+        <p>
+          <span className="font-semibold">Email:</span> {employee.email}
+        </p>
+        <p>
+          <span className="font-semibold">Phone:</span>{" "}
+          {employee.phoneNumber ?? "N/A"}
+        </p>
+        <p>
+          <span className="font-semibold">Designation:</span>{" "}
+          {employee.designation ?? "N/A"}
+        </p>
+        <p>
+          <span className="font-semibold">Department:</span>{" "}
+          {employee.department ?? "N/A"}
+        </p>
+        <p>
+          <span className="font-semibold">Role:</span>{" "}
+          {employee.role.replace("ROLE_", "")}
+        </p>
       </div>
     </div>
   );

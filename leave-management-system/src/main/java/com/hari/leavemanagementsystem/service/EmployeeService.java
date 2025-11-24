@@ -19,12 +19,15 @@ public class EmployeeService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // 🔥 Return only active employees
+    @Autowired
+    private LeaveBalanceService leaveBalanceService; // <-- added
+
+    // Return only active employees
     public List<Employee> getAllEmployees() {
         return employeeRepository.findByActiveTrue();
     }
 
-    // 🔥 Return only if active
+    // Return only if active
     public Employee getEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -36,7 +39,7 @@ public class EmployeeService {
         return employee;
     }
 
-    // 🔥 Used in login flow — block inactive users
+    // Used in login flow — block inactive users
     public Optional<Employee> getEmployeeByEmail(String email) {
         Optional<Employee> emp = employeeRepository.findByEmail(email);
 
@@ -52,10 +55,20 @@ public class EmployeeService {
             employee.setPassword(passwordEncoder.encode(employee.getPassword()));
         }
         employee.setActive(true); // ensure new employee defaults to active
-        return employeeRepository.save(employee);
+        Employee saved = employeeRepository.save(employee);
+
+        // Auto-initialize leave balances for the newly created employee
+        try {
+            leaveBalanceService.initializeEmployeeLeaveBalances(saved.getId());
+        } catch (Exception ex) {
+            // Log but do not fail the save — if initialization fails, admin can retry with /init/{id}
+            System.err.println("Warning: failed to initialize leave balances for employee id " + saved.getId() + " : " + ex.getMessage());
+        }
+
+        return saved;
     }
 
-    // 🔥 Soft delete — do NOT remove from DB
+    // Soft delete — do NOT remove from DB
     public void deleteEmployee(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));

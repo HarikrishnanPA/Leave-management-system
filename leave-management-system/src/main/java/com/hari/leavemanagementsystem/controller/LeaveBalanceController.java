@@ -28,9 +28,7 @@ public class LeaveBalanceController {
     private final LeaveBalanceService leaveBalanceService;
     private final EmployeeRepository employeeRepository;
 
-    // --------------------------------------------------------
     // EMPLOYEE or ADMIN → Get own leave balance
-    // --------------------------------------------------------
     @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<?> getMyBalance(Principal principal) {
@@ -49,9 +47,7 @@ public class LeaveBalanceController {
         return ResponseEntity.ok(response);
     }
 
-    // --------------------------------------------------------
     // ADMIN → Get leave balances of all employees
-    // --------------------------------------------------------
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<?> getAllBalances() {
@@ -67,9 +63,7 @@ public class LeaveBalanceController {
         return ResponseEntity.ok(response);
     }
 
-    // --------------------------------------------------------
     // ADMIN → Initialize leave balance for an employee
-    // --------------------------------------------------------
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/init/{employeeId}")
     public ResponseEntity<?> initBalance(@PathVariable Long employeeId) {
@@ -84,4 +78,21 @@ public class LeaveBalanceController {
 
         return ResponseEntity.ok(response);
     }
+
+    // ADMIN → Initialize leave balances for ALL employees
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/init-all")
+    public ResponseEntity<?> initAllEmployeeBalances() {
+
+        leaveBalanceService.initializeAllEmployeeLeaveBalances();
+
+        ApiResponse response = new ApiResponse(
+                "success",
+                "Leave balances initialized for ALL employees",
+                null
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 }

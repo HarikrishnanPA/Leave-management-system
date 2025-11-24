@@ -23,7 +23,8 @@ export default function AppRouter() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/employees" element={<ViewEmployees />} />
         <Route path="/admin/requests" element={<ViewRequests />} />
-        <Route path="/admin/requests/:id" element={<AdminRequestDetails />} />
+        {/* <Route path="/admin/requests/:id" element={<EmployeeProfile/>} /> */}
+        <Route path="/admin/employee/:id" element={<AdminRequestDetails />} />        
       </Routes>
     </BrowserRouter>
   );

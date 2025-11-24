@@ -33,26 +33,48 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
-                .requestMatchers(HttpMethod.GET, "/swagger-resources/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/webjars/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/employees/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/leave-types").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers(HttpMethod.POST, "/api/leave-types").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/leave-types/**").hasRole("ADMIN")
-                .requestMatchers("/api/leave-requests/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers(HttpMethod.GET, "/api/holidays/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/api/holidays/**").hasRole("ADMIN")
-                .requestMatchers("/api/manager-responses/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/api/leave-balance/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .anyRequest().authenticated()
+                    // Swagger and public
+                    .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/swagger-resources/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/webjars/**").permitAll()
+                    .requestMatchers("/api/auth/**").permitAll()
+
+                    // Explicit leave-balance rules (important: placed before generic matchers)
+                    // admin-only initialization endpoints
+                    .requestMatchers(HttpMethod.POST, "/api/leave-balance/init-all").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/leave-balance/init/**").hasRole("ADMIN")
+                    // allow both admin and employee to read their own balances
+                    .requestMatchers(HttpMethod.GET, "/api/leave-balance/my").hasAnyRole("ADMIN", "EMPLOYEE")
+                    // everything else under leave-balance is admin-only
+                    .requestMatchers("/api/leave-balance/**").hasRole("ADMIN")
+
+                    // Leave types
+                    .requestMatchers(HttpMethod.GET, "/api/leave-types").hasAnyRole("ADMIN", "EMPLOYEE")
+                    .requestMatchers(HttpMethod.POST, "/api/leave-types").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/leave-types/**").hasRole("ADMIN")
+
+                    // Employees management (admin only)
+                    .requestMatchers("/api/employees/**").hasRole("ADMIN")
+
+                    // Leave requests (protected)
+                    .requestMatchers("/api/leave-requests/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                    // Holidays
+                    .requestMatchers(HttpMethod.GET, "/api/holidays/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                    .requestMatchers("/api/holidays/**").hasRole("ADMIN")
+
+                    // Manager responses, notifications etc.
+                    .requestMatchers("/api/manager-responses/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                    .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                    // Fallback: authenticated
+                    .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // helpful for swagger UI frames and H2 console
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
