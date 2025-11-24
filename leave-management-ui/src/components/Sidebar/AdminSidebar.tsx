@@ -6,6 +6,8 @@ import { AuthContext } from "@/context/AuthContext";
 import { useContext } from "react";
 import { Search } from 'lucide-react';
 
+
+
 export default function AdminSidebar() {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ export default function AdminSidebar() {
   const handleLogout = () => {
     logout();
     localStorage.clear();
-    navigate("/login");
+    navigate("/");
   };
 
   return (

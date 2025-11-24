@@ -8,7 +8,7 @@ export default function AdminDashboard() {
 
       {/* Greeting */}
       <h1 className="text-4xl font-bold flex items-center gap-2">
-        Hello Robert 👋
+        Hello Admin 👋
       </h1>
       <p className="text-gray-500 mb-8">here’s what going on today!</p>
 

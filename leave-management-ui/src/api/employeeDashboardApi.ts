@@ -1,4 +1,5 @@
-import api from "axios";
+// src/api/employeeDashboardApi.ts
+import api from "./axios";
 
 export const fetchLeaveBalance = async () => {
   const res = await api.get("/leave-balance/my");

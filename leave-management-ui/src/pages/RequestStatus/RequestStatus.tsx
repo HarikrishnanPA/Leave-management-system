@@ -1,92 +1,136 @@
+// src/pages/employee/ViewStatus.tsx
+import { useEffect, useState, useContext } from "react";
 import EmployeeLayout from "@/layouts/EmployeeLayout";
+import { AuthContext } from "@/context/AuthContext";
+import StatusBadge from "@/components/StatusBadge/StatusBadge";
+import { fetchEmployeeLeaveRequests } from "@/api/leaveRequestApi";
 
-interface LeaveRow {
-  type: string;
-  date: string;
-  days: string;
+interface LeaveRequest {
+  id: number;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
+  leaveType: {
+    id: number;
+    typeName: string;
+  };
 }
 
-const approvedRequests: LeaveRow[] = [
-  { type: "Casual Leave", date: "21st May", days: "2 Days" },
-  { type: "Casual Leave", date: "8th April", days: "1 Day" },
-  { type: "Casual Leave", date: "7th April", days: "1 Day" },
-];
+export default function ViewStatus() {
+  const { user } = useContext(AuthContext);
 
-const pendingRequests: LeaveRow[] = [
-  { type: "Casual Leave", date: "26th May", days: "1 Day" },
-  { type: "Casual Leave", date: "25th May", days: "1 Day" },
-];
+  // Fix: extract userId correctly
+  const userId =
+    user?.userId ||
+    user?.id ||
+    Number(localStorage.getItem("userId"));
 
-const rejectedRequests: LeaveRow[] = [
-  { type: "Casual Leave", date: "26th May", days: "1 Day" },
-  { type: "Casual Leave", date: "25th May", days: "1 Day" },
-];
+  const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function Section({
-  title,
-  color,
-  rows,
-}: {
-  title: string;
-  color: string;
-  rows: LeaveRow[];
-}) {
-  return (
-    <div className="mb-12">
-      {/* Header */}
-      <div className={`px-4 py-2 rounded-t-lg ${color} text-black font-semibold`}>
-        {title}
-      </div>
+  useEffect(() => {
+    if (!userId) {
+      console.error("❌ userId missing");
+      return;
+    }
 
-      {/* Rows */}
-      <div className="border border-gray-200 rounded-b-lg">
-        {rows.map((row, index) => (
-          <div
-            key={index}
-            className="grid grid-cols-3 px-4 py-3 text-sm border-b last:border-b-0"
-          >
-            <div>{row.type}</div>
-            <div>{row.date}</div>
-            <div>{row.days}</div>
-          </div>
-        ))}
-      </div>
+    const load = async () => {
+      try {
+        const data = await fetchEmployeeLeaveRequests(userId);
+        setRequests(data);
+      } catch (err) {
+        console.error("❌ Failed to fetch leave requests", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      {/* Blue underline */}
-      <div className="h-2 bg-blue-500 rounded-full mt-2"></div>
-    </div>
-  );
-}
+    load();
+  }, [userId]);
 
-export default function RequestStatus() {
+  const pending = requests.filter((r) => r.status === "PENDING");
+  const approved = requests.filter((r) => r.status === "APPROVED");
+  const rejected = requests.filter((r) => r.status === "REJECTED");
+
   return (
     <EmployeeLayout>
-      <div className="">
+      <h1 className="text-4xl font-bold mb-2">Leave request status</h1>
+      <p className="text-gray-500 mb-8">View your approved, pending and rejected leave requests</p>
 
-        {/* Page title */}
-        <h1 className="text-4xl font-bold">View status</h1>
-        <p className="text-gray-500 mb-10">View your pending and approved requests here!</p>
+      {loading ? (
+        <p className="p-4">Loading...</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-8">
 
-        {/* Sections */}
-        <Section
-          title="Approved requests"
-          color="bg-green-400"
-          rows={approvedRequests}
-        />
+          {/* Pending */}
+          <div className="border border-blue-300 rounded-xl p-6 bg-white shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Pending</h2>
+            <div className="flex flex-col gap-4">
+              {pending.length === 0 && (
+                <p className="text-gray-500 text-sm">No pending requests</p>
+              )}
+              {pending.map((req) => (
+                <div key={req.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between">
+                    <p className="font-medium">{req.leaveType.typeName}</p>
+                    <StatusBadge status={req.status} />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {req.startDate} → {req.endDate}
+                  </p>
+                  <p className="text-sm mt-1">Reason: {req.reason}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <Section
-          title="Pending requests"
-          color="bg-yellow-300"
-          rows={pendingRequests}
-        />
+          {/* Approved */}
+          <div className="border border-green-300 rounded-xl p-6 bg-white shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Approved</h2>
+            <div className="flex flex-col gap-4">
+              {approved.length === 0 && (
+                <p className="text-gray-500 text-sm">No approved requests</p>
+              )}
+              {approved.map((req) => (
+                <div key={req.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between">
+                    <p className="font-medium">{req.leaveType.typeName}</p>
+                    <StatusBadge status={req.status} />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {req.startDate} → {req.endDate}
+                  </p>
+                  <p className="text-sm mt-1">Reason: {req.reason}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <Section
-          title="Rejected requests"
-          color="bg-red-300"
-          rows={rejectedRequests}
-        />
+          {/* Rejected */}
+          <div className="border border-red-300 rounded-xl p-6 bg-white shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Rejected</h2>
+            <div className="flex flex-col gap-4">
+              {rejected.length === 0 && (
+                <p className="text-gray-500 text-sm">No rejected requests</p>
+              )}
+              {rejected.map((req) => (
+                <div key={req.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between">
+                    <p className="font-medium">{req.leaveType.typeName}</p>
+                    <StatusBadge status={req.status} />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {req.startDate} → {req.endDate}
+                  </p>
+                  <p className="text-sm mt-1">Reason: {req.reason}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      </div>
+        </div>
+      )}
     </EmployeeLayout>
   );
 }

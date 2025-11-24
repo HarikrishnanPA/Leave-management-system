@@ -82,7 +82,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         catch (Exception ex) {
-
             // --- FIXED: Send proper JSON error response ---
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");

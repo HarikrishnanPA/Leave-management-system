@@ -1,22 +1,28 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function EmployeeCalendar() {
+interface CalendarProps {
+  approved: string[];
+  pending: string[];
+  holidays: string[];
+}
+
+export default function EmployeeCalendar({ approved, pending, holidays }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getMonthData = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startDay = firstDay.getDay(); // 0=Sunday
+    const startDay = firstDay.getDay(); // 0 = Sunday
     const weeks: number[][] = [];
     let week: number[] = [];
 
-    // Add empty cells before month starts
+    // Fill blanks before start
     for (let i = 0; i < (startDay === 0 ? 6 : startDay - 1); i++) {
-      week.push(0); // 0 = blank
+      week.push(0);
     }
 
-    // Add month days
+    // Fill days
     for (let day = 1; day <= daysInMonth; day++) {
       week.push(day);
       if (week.length === 7) {
@@ -34,16 +40,13 @@ export default function EmployeeCalendar() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+  const today = new Date();
 
-    // Month 1 = current month
-    const month1 = new Date(year, month, 1);
+  const month1 = new Date(year, month, 1);
+  const month2 = new Date(year, month + 1, 1);
 
-    // Month 2 = next month
-    const month2 = new Date(year, month + 1, 1);
-
-    // Month data
-    const month1Data = getMonthData(month1.getFullYear(), month1.getMonth());
-    const month2Data = getMonthData(month2.getFullYear(), month2.getMonth());
+  const month1Data = getMonthData(month1.getFullYear(), month1.getMonth());
+  const month2Data = getMonthData(month2.getFullYear(), month2.getMonth());
 
   const monthNames = [
     "January","February","March","April","May","June",
@@ -53,7 +56,7 @@ export default function EmployeeCalendar() {
   return (
     <div className="border border-blue-300 rounded-2xl p-6 bg-white shadow-sm">
 
-      {/* HEADER */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <button
           className="p-2 hover:bg-gray-200 rounded-full"
@@ -78,60 +81,111 @@ export default function EmployeeCalendar() {
 
       {/* TWO MONTH GRID */}
       <div className="grid grid-cols-2 gap-6">
-
-        {/* Month 1 */}
         <CalendarMonth
-            title={`${monthNames[month1.getMonth()]} ${month1.getFullYear()}`}
-            weeks={month1Data}
+          title={`${monthNames[month1.getMonth()]} ${month1.getFullYear()}`}
+          weeks={month1Data}
+          year={month1.getFullYear()}
+          month={month1.getMonth()}
+          approved={approved}
+          pending={pending}
+          holidays={holidays}
+          today={today}
         />
 
         <CalendarMonth
-            title={`${monthNames[month2.getMonth()]} ${month2.getFullYear()}`}
-            weeks={month2Data}
+          title={`${monthNames[month2.getMonth()]} ${month2.getFullYear()}`}
+          weeks={month2Data}
+          year={month2.getFullYear()}
+          month={month2.getMonth()}
+          approved={approved}
+          pending={pending}
+          holidays={holidays}
+          today={today}
         />
-
       </div>
 
       {/* LEGEND */}
       <div className="flex gap-4 mt-6 text-sm">
-        <LegendDot color="bg-red-500" label="Casual leave" />
         <LegendDot color="bg-yellow-400" label="Leave Applied" />
         <LegendDot color="bg-green-500" label="Approved leave" />
-        <LegendDot color="bg-pink-300" label="Designated leave" />
+        <LegendDot color="bg-pink-300" label="Designated holiday" />
         <LegendDot color="bg-blue-500" label="Today" />
+        <LegendDot color="text-red-500" label="Weekend" />
       </div>
     </div>
   );
 }
 
-/* ========== SUB COMPONENTS ========== */
+/* ============================================================
+   SUB COMPONENT: CalendarMonth WITH FULL COLOR LOGIC
+=============================================================== */
+function CalendarMonth({
+  title,
+  weeks,
+  year,
+  month,
+  approved,
+  pending,
+  holidays,
+  today
+}: any) {
 
-function CalendarMonth({ title, weeks }: { title: string, weeks: number[][] }) {
+  const format = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
   return (
     <div>
       <h3 className="text-center text-lg font-medium mb-3">{title}</h3>
 
-      {/* WEEKHEADERS */}
+      {/* Week Headers */}
       <div className="grid grid-cols-7 text-center text-gray-500 text-sm mb-2">
         {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d => (
           <div key={d}>{d}</div>
         ))}
       </div>
 
-      {/* WEEK ROWS */}
+      {/* Weeks */}
       <div className="grid gap-2">
-        {weeks.map((week, idx) => (
-          <div key={idx} className="grid grid-cols-7 gap-2">
-            {week.map((day, i) => (
-              <div
-                key={i}
-                className={`h-10 flex items-center justify-center rounded-md border ${
-                  day === 0 ? "border-transparent" : "border-gray-300"
-                }`}
-              >
-                {day !== 0 ? day : ""}
-              </div>
-            ))}
+        {weeks.map((week: number[], wi: number) => (
+          <div key={wi} className="grid grid-cols-7 gap-2">
+            {week.map((day: number, di: number) => {
+              if (day === 0) {
+                return <div key={di} className="h-10"></div>;
+              }
+
+              const dateStr = format(year, month, day);
+
+              const isToday =
+                today.getFullYear() === year &&
+                today.getMonth() === month &&
+                today.getDate() === day;
+
+              const isWeekend = di === 5 || di === 6; // Sat=5, Sun=6
+              const isHoliday = holidays.includes(dateStr);
+              const isApproved = approved.includes(dateStr);
+              const isPending = pending.includes(dateStr);
+
+              // color logic priority
+              let bg = "";
+              if (isHoliday) bg = "bg-pink-300";
+              else if (isApproved) bg = "bg-green-500 text-white";
+              else if (isPending) bg = "bg-yellow-300";
+              else if (isToday) bg = "bg-blue-500 text-white";
+
+              const weekendText = isWeekend ? "text-red-500 font-bold" : "";
+
+              return (
+                <div
+                  key={di}
+                  className={`h-10 flex items-center justify-center rounded-md border border-gray-300
+                    ${bg}
+                    ${!bg ? weekendText : ""}
+                  `}
+                >
+                  {day}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>

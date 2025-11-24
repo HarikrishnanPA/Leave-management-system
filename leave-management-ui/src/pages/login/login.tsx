@@ -9,6 +9,7 @@ import { loginUser } from "@/api/authApi";
 import { AuthContext } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Mail, Key, Eye, EyeOff } from "lucide-react";
+import api from "@/api/axios";
 
 interface DecodedToken {
   sub: string;
@@ -19,57 +20,56 @@ interface DecodedToken {
 }
 
 export default function Login() {
+  const { login, fetchProfile } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+const handleLogin = async () => {
+  setError("");
 
-  const handleLogin = async () => {
-    setError("");
+  if (!email || !password) {
+    setError("Email and password are required");
+    return;
+  }
 
-    if (!email || !password) {
-      setError("Email and password are required");
-      return;
-    }
+  try {
+    // Login → get token
+    const data = await loginUser(email, password);
 
-    try {
-      // Call backend → returns { token }
-      const data = await loginUser(email, password);
+    // 👉 FIX: Attach token BEFORE calling fetchProfile
+    localStorage.setItem("token", data.token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
 
-      // Decode the token to extract user info
-      const decoded = jwtDecode<DecodedToken>(data.token);
+    // Decode JWT
+    const decoded = jwtDecode<DecodedToken>(data.token);
+    const role = decoded.role.replace("ROLE_", "");
+    const userId = decoded.userId;
+    const userEmail = decoded.sub;
 
-      const role = decoded.role.replace("ROLE_", ""); // ADMIN or EMPLOYEE
-      const userId = decoded.userId;
-      const userEmail = decoded.sub;
+    // Fetch user profile (NOW TOKEN IS SENT)
+    const profile = await fetchProfile();
 
-      // Store auth data in context
-      login({
-        token: data.token,
-        role: role,
-        userId: userId,
-        email: userEmail,
-      });
+    // Save to AuthContext
+    login({
+      token: data.token,
+      role,
+      userId,
+      email: userEmail,
+      name: profile.name,   // ⭐ NOW WORKS
+    });
 
-      // Save in local storage
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("userId", String(userId));
-      localStorage.setItem("email", userEmail);
+    // Redirect
+    navigate(role === "ADMIN" ? "/admin/dashboard" : "/employee/dashboard");
 
-      // Redirect based on role
-      if (role === "ADMIN") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/employee/dashboard");
-      }
-    } catch (err) {
-      setError("Invalid credentials");
-    }
-  };
+  } catch (err) {
+    setError("Invalid credentials");
+  }
+};
+
 
   return (
     <div

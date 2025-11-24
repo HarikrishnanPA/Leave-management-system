@@ -12,7 +12,7 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
 
         {/* Employee */}
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />

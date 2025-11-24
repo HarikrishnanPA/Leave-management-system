@@ -28,40 +28,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            .authorizeHttpRequests(auth -> auth
-                // ---------- make swagger/openapi fully public (explicit GETs)
+                .csrf(csrf -> csrf.disable())
+                // ENABLE CORS using CorsConfigurationSource bean
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
                 .requestMatchers(HttpMethod.GET, "/swagger-resources/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/webjars/**").permitAll()
-
-                // public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-
-                // role-based secured endpoints
                 .requestMatchers("/api/employees/**").hasRole("ADMIN")
-                .requestMatchers("/api/leave-types/**").hasRole("ADMIN")
-                // leave-requests protected, further checks in controller (method-level)
+                .requestMatchers(HttpMethod.GET, "/api/leave-types").hasAnyRole("ADMIN", "EMPLOYEE")
+                .requestMatchers(HttpMethod.POST, "/api/leave-types").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/leave-types/**").hasRole("ADMIN")
                 .requestMatchers("/api/leave-requests/**").hasAnyRole("ADMIN", "EMPLOYEE")
-
-                // any other endpoint: authenticated
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/holidays/**").hasAnyRole("ADMIN","EMPLOYEE")
+                .requestMatchers(HttpMethod.GET, "/api/holidays/**").hasAnyRole("ADMIN", "EMPLOYEE")
                 .requestMatchers("/api/holidays/**").hasRole("ADMIN")
-                .requestMatchers("/api/manager-responses/**").hasAnyRole("ADMIN","EMPLOYEE")
-                .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN","EMPLOYEE")
-                .requestMatchers("/api/leave-balance/**").hasAnyRole("ADMIN","EMPLOYEE")
+                .requestMatchers("/api/manager-responses/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                .requestMatchers("/api/leave-balance/**").hasAnyRole("ADMIN", "EMPLOYEE")
                 .anyRequest().authenticated()
-            )
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-            // Add JWT filter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // helpful for swagger UI frames and H2 console
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
@@ -76,4 +67,22 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        var config = new org.springframework.web.cors.CorsConfiguration();
+
+        config.setAllowCredentials(true);
+
+        config.setAllowedOrigins(java.util.List.of("http://localhost:5173"));
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(java.util.List.of("*"));
+        config.setExposedHeaders(java.util.List.of("*"));
+
+        var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
+    }
+
 }
