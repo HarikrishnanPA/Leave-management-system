@@ -3,12 +3,7 @@ import { AuthContext } from "@/context/AuthContext";
 import EmployeeCalendar from "@/components/Calendar/EmployeeCalendar";
 import RemainingLeaves from "@/components/RemainingLeaves/RemainingLeaves";
 import UpcomingHolidayCard from "@/components/UpcomingHolidayCard/UpcomingHolidayCard";
-
-import {
-  fetchLeaveBalance,
-  fetchEmployeeLeaveRequests,
-  fetchHolidays,
-} from "@/api/employeeDashboardApi";
+import { fetchLeaveBalance, fetchEmployeeLeaveRequests, fetchHolidays } from "@/api/employeeDashboardApi";
 import EmployeeLayout from "@/layouts/EmployeeLayout";
 
 export default function EmployeeDashboard() {

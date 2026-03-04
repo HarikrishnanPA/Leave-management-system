@@ -2,6 +2,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 import { Input } from "@/components/ui/input";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchAllEmployees,
   fetchEmployeesByDepartment,
@@ -18,10 +19,13 @@ interface Employee {
 }
 
 export default function ViewEmployees() {
+  const navigate = useNavigate();
+
   const [search, setSearch] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [selectedDept, setSelectedDept] = useState("");
+  const [departments, setDepartments] = useState<string[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const employeesPerPage = 10;
@@ -37,42 +41,54 @@ export default function ViewEmployees() {
 
   const loadEmployees = async () => {
     try {
-      const data = await fetchAllEmployees();
+      const data: Employee[] = await fetchAllEmployees();
       setEmployees(data);
       setFilteredEmployees(data);
+
+      // Extract unique department names
+      const uniqueDepts: string[] = Array.from(
+        new Set(
+          data
+            .map((e: Employee) => e.department || "")
+            .filter((d: string) => d.trim() !== "")
+        )
+      ).sort();
+
+      setDepartments(uniqueDepts);
     } catch (err) {
       console.error("Failed to fetch employees", err);
     }
   };
 
-  // Search employees by name
+  // Search
   const handleSearch = (value: string) => {
     setSearch(value);
     setCurrentPage(1);
 
-    let updated = employees;
+    let updated: Employee[] = employees;
 
     if (selectedDept !== "") {
       updated = updated.filter(
-        (e) => (e.department || "").toLowerCase() === selectedDept.toLowerCase()
+        (e: Employee) =>
+          (e.department || "").toLowerCase() === selectedDept.toLowerCase()
       );
     }
 
     setFilteredEmployees(
-      updated.filter((emp) =>
+      updated.filter((emp: Employee) =>
         emp.name.toLowerCase().includes(value.toLowerCase())
       )
     );
   };
 
-  // Filter by department
+  // Department filter
   const handleDeptFilter = async (dept: string) => {
     setSelectedDept(dept);
     setCurrentPage(1);
 
     if (dept === "") {
       setFilteredEmployees(
-        employees.filter((emp) =>
+        employees.filter((emp: Employee) =>
           emp.name.toLowerCase().includes(search.toLowerCase())
         )
       );
@@ -80,9 +96,9 @@ export default function ViewEmployees() {
     }
 
     try {
-      const deptEmployees = await fetchEmployeesByDepartment(dept);
+      const deptEmployees: Employee[] = await fetchEmployeesByDepartment(dept);
       setFilteredEmployees(
-        deptEmployees.filter((emp: any) =>
+        deptEmployees.filter((emp: Employee) =>
           emp.name.toLowerCase().includes(search.toLowerCase())
         )
       );
@@ -102,20 +118,26 @@ export default function ViewEmployees() {
           placeholder="Search employees"
           className="bg-white border-gray-300 max-w-md"
           value={search}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleSearch(e.target.value)
+          }
         />
 
-        {/* Department dropdown */}
+        {/* Dynamic department dropdown */}
         <select
-          className="border border-gray-300 rounded-md p-2 bg-white "
+          className="border border-gray-300 rounded-md p-2 bg-white"
           value={selectedDept}
-          onChange={(e) => handleDeptFilter(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            handleDeptFilter(e.target.value)
+          }
         >
           <option value="">All Departments</option>
-          <option value="digital">Digital</option>
-          <option value="NXT">NXT</option>
-          <option value="Finance">Finance</option>
-          <option value="Networks">Networks</option>
+
+          {departments.map((dept: string) => (
+            <option key={dept} value={dept}>
+              {dept}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -129,16 +151,26 @@ export default function ViewEmployees() {
         {filteredEmployees.length === 0 ? (
           <p className="p-4 text-gray-500">No employees found</p>
         ) : (
-          currentEmployees.map((emp) => (
+          currentEmployees.map((emp: Employee) => (
             <div
               key={emp.id}
-              className="grid grid-cols-4 px-4 py-3 text-sm border-b last:border-b-0 items-center"
+              onClick={() => navigate(`/admin/employee/${emp.id}`)}
+              className="
+                grid grid-cols-4 px-4 py-3 text-sm border-b last:border-b-0 items-center
+                cursor-pointer hover:bg-gray-100 transition
+              "
             >
               <span>{emp.name}</span>
               <span>{emp.designation || "—"}</span>
               <span>{emp.department || "—"}</span>
 
-              <button className="justify-self-end hover:text-blue-600">
+              <button
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.stopPropagation();
+                  navigate(`/admin/employee/${emp.id}`);
+                }}
+                className="justify-self-end hover:text-blue-600"
+              >
                 <ExternalLink size={16} />
               </button>
             </div>
@@ -148,7 +180,7 @@ export default function ViewEmployees() {
 
       {/* Pagination */}
       <div className="flex items-center gap-2 mt-4">
-        {/* Previous */}
+        {/* Prev */}
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((p) => p - 1)}
@@ -162,7 +194,7 @@ export default function ViewEmployees() {
         </button>
 
         {/* Page numbers */}
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((num: number) => (
           <button
             key={num}
             onClick={() => setCurrentPage(num)}

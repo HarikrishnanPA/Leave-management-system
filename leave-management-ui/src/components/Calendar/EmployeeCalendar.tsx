@@ -110,7 +110,7 @@ export default function EmployeeCalendar({ approved, pending, holidays }: Calend
         <LegendDot color="bg-green-500" label="Approved leave" />
         <LegendDot color="bg-pink-300" label="Designated holiday" />
         <LegendDot color="bg-blue-500" label="Today" />
-        <LegendDot color="text-red-500" label="Weekend" />
+        <LegendDot color="bg-red-500" label="Weekend" />
       </div>
     </div>
   );
@@ -135,7 +135,7 @@ function CalendarMonth({
 
   return (
     <div>
-      <h3 className="text-center text-lg font-medium mb-3">{title}</h3>
+      {/* <h3 className="text-center text-lg font-medium mb-3">{title}</h3> */}
 
       {/* Week Headers */}
       <div className="grid grid-cols-7 text-center text-gray-500 text-sm mb-2">
